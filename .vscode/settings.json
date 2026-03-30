@@ -1,0 +1,11 @@
+{
+  "git.showIgnoredFiles": false,
+  "files.watcherExclude": {
+    "**/venv/**": true
+  },
+  "files.exclude": {
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}
