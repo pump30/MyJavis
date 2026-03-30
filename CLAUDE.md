@@ -76,3 +76,27 @@ All settings are in `config.py` as module-level constants. Key ones:
 1. Add the tool schema to `agent/tools/definitions.py`
 2. Create the implementation in `agent/tools/<name>.py`
 3. Register the dispatch in `agent/tool_executor.py`
+
+## Development Workflow (Superpowers)
+
+This project uses the Superpowers plugin. Every feature/bugfix must follow the complete flow:
+
+1. **Brainstorming** — align on design before writing any code
+2. **Writing plans** — break work into small tasks (2-5 min each), with exact file paths and verification steps
+3. **Subagent-driven development** — execute tasks with two-stage auto-review (spec compliance + code quality)
+4. **TDD** — RED-GREEN-REFACTOR for all new code
+
+Use git worktrees for feature isolation. Use `dispatching-parallel-agents` for independent tasks (e.g. adding multiple tools, UI + backend changes in parallel).
+
+Do not skip steps even for seemingly simple changes.
+
+## Priority Areas
+
+1. Add test coverage, starting from `agent/client.py` (tool-use loop) and `pipeline/orchestrator.py`
+2. New agent tools (each follows the 3-step pattern in "Adding a New Tool")
+3. Error handling and interrupt mechanism robustness
+4. Browser mic path parity with system mic path
+
+## Network
+
+Git proxy for GitHub access: `http://127.0.0.1:7892`
