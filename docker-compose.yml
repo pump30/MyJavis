@@ -19,7 +19,10 @@ services:
     restart: unless-stopped
 
   jarvis:
-    build: .
+    build:
+      context: .
+      network: host
+    image: jarvis-assistant
     ports:
       - "8088:8088"
     environment:
