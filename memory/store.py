@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import yaml
 
@@ -79,7 +79,8 @@ class MemoryStore:
             if entry["type"] != memory_type:
                 continue
             existing_tags = set(entry.get("tags", []))
-            if not new_tags.intersection(existing_tags):
+            # When both have tags, require overlap; when either is tagless, skip tag check
+            if new_tags and existing_tags and not new_tags.intersection(existing_tags):
                 continue
             existing_tokens = self._tokenize(entry["summary"])
             if not existing_tokens:
@@ -248,7 +249,6 @@ class MemoryStore:
     def get_recent_events(self, days: int = 7) -> list[str]:
         """Get summaries of events created/updated within the last N days."""
         index = self._load_index()
-        from datetime import timedelta
         cutoff_dt = datetime.now() - timedelta(days=days)
         cutoff_str = cutoff_dt.isoformat(timespec="seconds")
 

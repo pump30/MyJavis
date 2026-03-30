@@ -34,10 +34,13 @@ class MemoryExtractor:
             base_url=config.ANTHROPIC_BASE_URL,
             api_key=config.ANTHROPIC_API_KEY,
         )
+        self._tasks: set[asyncio.Task] = set()
 
     def trigger(self, user_text: str, assistant_text: str):
         """Fire-and-forget: schedule extraction as a background task."""
-        asyncio.create_task(self._extract(user_text, assistant_text))
+        task = asyncio.create_task(self._extract(user_text, assistant_text))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
 
     async def _extract(self, user_text: str, assistant_text: str):
         """Call Claude to analyze the conversation turn and save any extracted memories."""
