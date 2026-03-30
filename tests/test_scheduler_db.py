@@ -1,8 +1,6 @@
 """Tests for scheduler.db — the SQLite persistence layer for scheduled tasks."""
 
-import os
 import sqlite3
-import tempfile
 from datetime import datetime, timezone
 
 import pytest
