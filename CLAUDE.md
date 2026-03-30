@@ -90,6 +90,19 @@ Use git worktrees for feature isolation. Use `dispatching-parallel-agents` for i
 
 Do not skip steps even for seemingly simple changes.
 
+### PR Workflow
+
+Each feature/bugfix must follow this delivery flow:
+1. Create a feature branch (use git worktree for isolation)
+2. Implement with the Superpowers flow above
+3. Run `requesting-code-review` to self-review against the plan
+4. Fix all issues found in review
+5. Verify all tests pass
+6. Push branch and create a PR to `main` via `gh pr create`
+7. Wait for the user to review and merge — do NOT merge PRs yourself
+
+Use proxy for all git push/PR operations: `http://127.0.0.1:7892`
+
 ## Priority Areas
 
 1. Add test coverage, starting from `agent/client.py` (tool-use loop) and `pipeline/orchestrator.py`
