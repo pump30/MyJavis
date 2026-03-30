@@ -16,9 +16,10 @@ from fastapi import FastAPI
 import config
 from pipeline.state import StateManager
 from pipeline.orchestrator import Orchestrator
-from agent.tools.alarm import set_broadcast
 import web.server as web_module
 from agent.client import chat
+from scheduler.db import init_db
+from scheduler.manager import SchedulerManager
 
 _orchestrator = None
 
@@ -34,7 +35,13 @@ async def lifespan(application: FastAPI):
         return await chat(text)
 
     web_module.agent_handler = agent_handler
-    set_broadcast(web_module.broadcast)
+
+    init_db()
+    scheduler = SchedulerManager(broadcast_fn=web_module.broadcast, chat_fn=chat)
+    await scheduler.start()
+    web_module.scheduler_manager = scheduler
+    import agent.tool_executor as tool_executor_module
+    tool_executor_module.scheduler_manager = scheduler
 
     _orchestrator = Orchestrator(sm, web_module.broadcast)
     web_module.orchestrator = _orchestrator
@@ -56,6 +63,7 @@ async def lifespan(application: FastAPI):
 
     yield
 
+    await scheduler.shutdown()
     if _orchestrator:
         await _orchestrator.stop()
 

@@ -4,7 +4,7 @@ from agent.tools.web_search import web_search
 from agent.tools.music import play_music
 from agent.tools.scheduler_tools import schedule_task, list_tasks, cancel_task
 
-# Set by main.py at startup (same pattern as alarm's set_broadcast).
+# Set by main.py at startup.
 scheduler_manager = None
 
 
