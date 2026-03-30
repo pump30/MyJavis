@@ -7,38 +7,52 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="status-indicator" id="statusIndicator">
-                <span class="status-dot" id="statusDot"></span>
-                <span class="status-text" id="statusText">待机中</span>
+    <div class="app">
+        <!-- Top bar -->
+        <header class="topbar">
+            <span class="logo">Jarvis</span>
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="chat">Chat</button>
+                <button class="tab-btn" data-tab="tasks">
+                    Tasks <span class="badge" id="tasks-badge" hidden></span>
+                </button>
+                <button class="tab-btn tab-plus" disabled>+</button>
+            </nav>
+            <div class="topbar-controls">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span class="status-text" id="statusText">待机中</span>
+                </div>
+                <button class="stop-btn" id="stopBtn" title="打断回复" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    </svg>
+                    停止
+                </button>
             </div>
-            <h1>Jarvis</h1>
-            <button class="stop-btn" id="stopBtn" title="打断回复" style="display:none;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="4" y="4" width="16" height="16" rx="2"/>
-                </svg>
-                停止
-            </button>
         </header>
 
-        <!-- Conversation panel -->
-        <div class="conversation" id="conversation">
-            <div class="welcome-msg">
-                <p>👋 你好！我是 Jarvis，你的 AI 语音助手。</p>
-                <p>说 <strong>"Hey Jarvis"</strong> 唤醒我，或在下方输入文字。</p>
-            </div>
-        </div>
+        <!-- Tab content -->
+        <main class="tab-content">
+            <section id="tab-chat" class="tab-panel active">
+                <div class="conversation" id="conversation">
+                    <div class="welcome-msg">
+                        <p>你好！我是 Jarvis，你的 AI 语音助手。</p>
+                        <p>说 <strong>"Hey Jarvis"</strong> 唤醒我，或在下方输入文字。</p>
+                    </div>
+                </div>
+            </section>
+            <section id="tab-tasks" class="tab-panel">
+                <div class="task-list" id="taskList">
+                    <div class="empty-state" id="tasksEmptyState">
+                        暂无定时任务，试试对 Jarvis 说「每天早上9点提醒我站会」
+                    </div>
+                </div>
+            </section>
+        </main>
 
-        <!-- Alarms panel -->
-        <div class="alarms-panel" id="alarmsPanel" style="display:none;">
-            <h3>⏰ 活跃闹钟</h3>
-            <div id="alarmsList"></div>
-        </div>
-
-        <!-- Input bar -->
-        <div class="input-bar">
+        <!-- Input bar (hidden when Tasks tab active) -->
+        <footer class="input-bar" id="input-bar">
             <button class="voice-toggle-btn active" id="voiceToggleBtn" title="语音回复开关">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -61,7 +75,7 @@
                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
             </button>
-        </div>
+        </footer>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
