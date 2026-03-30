@@ -9,6 +9,7 @@ from agent.tool_executor import execute_tool
 from agent.tools.definitions import TOOLS
 from memory.store import MemoryStore
 from memory.loader import MemoryLoader
+from memory.extractor import MemoryExtractor
 from agent.tools.memory import set_store as _set_memory_store
 
 # Shared conversation state
@@ -22,6 +23,7 @@ _client = anthropic.AsyncAnthropic(
 _memory_store = MemoryStore()
 _memory_loader = MemoryLoader(_memory_store)
 _set_memory_store(_memory_store)
+_memory_extractor = MemoryExtractor(_memory_store)
 
 
 def _serialize_content(content) -> list[dict]:
@@ -84,6 +86,8 @@ async def chat(user_text: str) -> str:
             final_text = "\n".join(text_parts) if text_parts else ""
             conversation.add_assistant(final_text)
             print(f"[agent] Response: {final_text[:100]}")
+            # Trigger async memory extraction (non-blocking)
+            _memory_extractor.trigger(user_text, final_text)
             return final_text
 
         # Add the full assistant response (serialized) to conversation
