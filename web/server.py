@@ -54,6 +54,13 @@ async def websocket_endpoint(ws: WebSocket):
         "state": state_manager.state.value if state_manager else "idle",
     }))
 
+    # Send current task list
+    if scheduler_manager:
+        await ws.send_text(json.dumps({
+            "type": "tasks_updated",
+            "tasks": scheduler_manager.list_tasks(),
+        }, ensure_ascii=False))
+
     # Subscribe to state changes
     state_queue = state_manager.subscribe() if state_manager else None
 

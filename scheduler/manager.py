@@ -82,6 +82,11 @@ class SchedulerManager:
         delay = max(0, (fire_dt - now).total_seconds())
         self._register_handle(task_id, delay)
 
+        await self._broadcast({
+            "type": "tasks_updated",
+            "tasks": get_all_tasks(self._db_path),
+        })
+
         return task_id
 
     async def cancel_task(self, task_id: int) -> bool:
