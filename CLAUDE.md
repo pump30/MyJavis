@@ -20,7 +20,7 @@ python main.py
 # Web UI at http://localhost:8088
 ```
 
-There are no tests or linting configured in this project.
+Tests: `python -m pytest tests/ -v` (activate venv first: `source venv/Scripts/activate`).
 
 ## Architecture
 
@@ -45,6 +45,14 @@ This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Dev
 - Self-review changes with `requesting-code-review` before creating a PR.
 - Create PRs to `main` using `gh pr create`.
 - **Git Proxy**: Use `http://127.0.0.1:7892` for all `git push` and `gh` commands.
+
+### Smoke Testing & PR Screenshots
+Every PR that changes UI or user-facing behavior **must** include a smoke test:
+1. Start the app: `source venv/Scripts/activate && python main.py`
+2. Open `http://localhost:8088` in Playwright browser.
+3. Walk through the relevant test scenarios (tab switching, task creation, etc.).
+4. **Take screenshots** of each key step using `browser_take_screenshot` and attach them to the PR body as evidence.
+5. Never skip smoke tests — they catch integration bugs that unit tests miss.
 
 ## Priority Areas
 
