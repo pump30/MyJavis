@@ -1,9 +1,11 @@
 """Voice Assistant configuration."""
 
+import os
+
 # ---------------------------------------------------------------------------
 # AI Proxy
 # ---------------------------------------------------------------------------
-ANTHROPIC_BASE_URL = "http://localhost:6656"
+ANTHROPIC_BASE_URL = os.environ.get("ANTHROPIC_BASE_URL", "http://localhost:6656")
 ANTHROPIC_API_KEY = "placeholder"
 MODEL = "anthropic:claude-sonnet-4-20250514"
 MAX_TOKENS = 4096

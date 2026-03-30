@@ -1,0 +1,35 @@
+services:
+  aicore-proxy:
+    image: yunxiaozhao/aicore-proxy:latest
+    ports:
+      - "6656:6655"
+    environment:
+      - SAP_CLIENT_ID=sb-f85b514c-79fa-4f30-af1f-b793e31d0f79!b18435|xsuaa_std!b318061
+      - SAP_CLIENT_SECRET=41a2357a-3781-48c9-864e-8833fadeca03$$W2M3Bm2jRMBNptGZtiEWx3cCY_sQ8fyDtztH4E903ME=
+      - SAP_AUTH_URL=https://ich-dev-eu12.authentication.eu12.hana.ondemand.com
+      - SAP_AI_API_URL=https://api.ai.intprod-eu12.eu-central-1.aws.ml.hana.ondemand.com
+      - SAP_DEPLOYMENT_ID=d55f5d605fec7080
+      - SAP_RESOURCE_GROUP=default
+      - VERBOSE=false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6655/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  jarvis:
+    build: .
+    ports:
+      - "8088:8088"
+    environment:
+      - ANTHROPIC_BASE_URL=http://aicore-proxy:6655
+    depends_on:
+      aicore-proxy:
+        condition: service_healthy
+    volumes:
+      - jarvis-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  jarvis-data:

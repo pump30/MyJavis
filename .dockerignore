@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.claude/
+data/
+.git/
+.gitignore
+.dockerignore
+.pytest_cache/
+tests/
+docs/
+*.md
