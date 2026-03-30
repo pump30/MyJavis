@@ -1,0 +1,30 @@
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+jinja2>=3.1.0
+python-multipart>=0.0.9
+
+# AI Agent
+anthropic>=0.40.0
+
+# Wake word
+openwakeword>=0.6.0
+
+# Speech-to-text
+faster-whisper>=1.0.0
+
+# Text-to-speech
+edge-tts>=6.1.0
+pyttsx3>=2.90
+
+# Audio
+sounddevice>=0.4.6
+numpy>=1.24.0
+
+# Tools
+duckduckgo-search>=6.0.0
+yt-dlp>=2024.0.0
+
+# Utilities
+python-dateutil>=2.8.0
+aiofiles>=23.0.0
