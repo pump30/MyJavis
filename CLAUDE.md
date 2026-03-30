@@ -45,6 +45,7 @@ This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Dev
 - Self-review changes with `requesting-code-review` before creating a PR.
 - Create PRs to `main` using `gh pr create`.
 - **Git Proxy**: Use `http://127.0.0.1:7892` for all `git push` and `gh` commands.
+- **Resolve conflicts before merging**: After creating a PR, always `git fetch origin main && git rebase origin/main` to resolve any conflicts, then force-push the branch. PRs must be conflict-free before requesting merge.
 
 ### Smoke Testing & PR Screenshots
 Every PR that changes UI or user-facing behavior **must** include a smoke test:

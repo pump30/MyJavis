@@ -7,6 +7,10 @@ import config
 from agent.conversation import ConversationManager
 from agent.tool_executor import execute_tool
 from agent.tools.definitions import TOOLS
+from memory.store import MemoryStore
+from memory.loader import MemoryLoader
+from memory.extractor import MemoryExtractor
+from agent.tools.memory import set_store as _set_memory_store
 
 # Shared conversation state
 conversation = ConversationManager()
@@ -15,6 +19,11 @@ _client = anthropic.AsyncAnthropic(
     base_url=config.ANTHROPIC_BASE_URL,
     api_key=config.ANTHROPIC_API_KEY,
 )
+
+_memory_store = MemoryStore()
+_memory_loader = MemoryLoader(_memory_store)
+_set_memory_store(_memory_store)
+_memory_extractor = MemoryExtractor(_memory_store)
 
 
 def _serialize_content(content) -> list[dict]:
@@ -48,7 +57,11 @@ async def chat(user_text: str) -> str:
             response = await _client.messages.create(
                 model=config.MODEL,
                 max_tokens=config.MAX_TOKENS,
-                system=f"{config.SYSTEM_PROMPT}\nCurrent date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S %A')}",
+                system=(
+                    f"{config.SYSTEM_PROMPT}\n"
+                    f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S %A')}"
+                    f"{_memory_loader.build_context()}"
+                ),
                 tools=TOOLS,
                 messages=conversation.messages,
             )
@@ -73,6 +86,8 @@ async def chat(user_text: str) -> str:
             final_text = "\n".join(text_parts) if text_parts else ""
             conversation.add_assistant(final_text)
             print(f"[agent] Response: {final_text[:100]}")
+            # Trigger async memory extraction (non-blocking)
+            _memory_extractor.trigger(user_text, final_text)
             return final_text
 
         # Add the full assistant response (serialized) to conversation

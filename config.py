@@ -12,7 +12,10 @@ MAX_TOKENS = 4096
 SYSTEM_PROMPT = (
     "You are Jarvis, a helpful voice assistant. "
     "You can search the web, schedule tasks (reminders, actions, recurring jobs), "
-    "and play music. "
+    "play music, and remember things. "
+    "You have a long-term memory — you can save and recall information across conversations. "
+    "When the user asks you to remember something, use the save_memory tool. "
+    "When you need to recall stored information, use the recall_memory tool. "
     "Keep responses concise and conversational — they will be spoken aloud. "
     "Respond in the same language the user speaks (Chinese or English). "
     "The user is located in Shanghai, China. "
@@ -65,3 +68,8 @@ WEB_PORT = 8088
 # Music
 # ---------------------------------------------------------------------------
 MUSIC_LOCAL_DIR = None  # set to a path to enable local music search
+
+# ---------------------------------------------------------------------------
+# Memory
+# ---------------------------------------------------------------------------
+MEMORY_DIR = "data/memory"

@@ -15,11 +15,20 @@ from fastapi import FastAPI
 
 import config
 from pipeline.state import StateManager
-from pipeline.orchestrator import Orchestrator
 import web.server as web_module
 from agent.client import chat
-from scheduler.db import init_db
-from scheduler.manager import SchedulerManager
+
+try:
+    from pipeline.orchestrator import Orchestrator
+except ImportError:
+    Orchestrator = None
+
+try:
+    from scheduler.db import init_db
+    from scheduler.manager import SchedulerManager
+except ImportError:
+    init_db = None
+    SchedulerManager = None
 
 _orchestrator = None
 
@@ -36,34 +45,40 @@ async def lifespan(application: FastAPI):
 
     web_module.agent_handler = agent_handler
 
-    init_db()
-    scheduler = SchedulerManager(broadcast_fn=web_module.broadcast, chat_fn=chat)
-    await scheduler.start()
-    web_module.scheduler_manager = scheduler
-    import agent.tool_executor as tool_executor_module
-    tool_executor_module.scheduler_manager = scheduler
-
-    _orchestrator = Orchestrator(sm, web_module.broadcast)
-    web_module.orchestrator = _orchestrator
+    # Scheduler setup (optional — requires scheduler module)
+    scheduler = None
+    if init_db is not None and SchedulerManager is not None:
+        init_db()
+        scheduler = SchedulerManager(broadcast_fn=web_module.broadcast, chat_fn=chat)
+        await scheduler.start()
+        web_module.scheduler_manager = scheduler
+        import agent.tool_executor as tool_executor_module
+        tool_executor_module.scheduler_manager = scheduler
 
     print("=" * 50)
     print("  Jarvis Voice Assistant")
     print("=" * 50)
 
-    try:
-        await _orchestrator.load_models()
-        await _orchestrator.start()
-        print("[main] Voice pipeline started.")
-    except Exception as e:
-        print(f"[main] Voice pipeline unavailable: {e}")
-        print("[main] Running in text-only mode (Web UI still works).")
+    if Orchestrator is not None:
+        _orchestrator = Orchestrator(sm, web_module.broadcast)
+        web_module.orchestrator = _orchestrator
+        try:
+            await _orchestrator.load_models()
+            await _orchestrator.start()
+            print("[main] Voice pipeline started.")
+        except Exception as e:
+            print(f"[main] Voice pipeline unavailable: {e}")
+            print("[main] Running in text-only mode (Web UI still works).")
+    else:
+        print("[main] Audio modules not available. Running in text-only mode.")
 
     print(f"[main] Web UI: http://localhost:{config.WEB_PORT}")
     print("=" * 50)
 
     yield
 
-    await scheduler.shutdown()
+    if scheduler:
+        await scheduler.shutdown()
     if _orchestrator:
         await _orchestrator.stop()
 

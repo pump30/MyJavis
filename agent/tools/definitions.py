@@ -96,4 +96,58 @@ TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "save_memory",
+        "description": (
+            "Save information to long-term memory. Use when the user explicitly "
+            "asks you to remember something, e.g. '记住...', '记下来...', 'remember that...'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["user_profile", "fact", "event", "preference"],
+                    "description": "Category of information to save",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Keywords for searchability",
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "Brief one-line summary of the memory",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full content to remember",
+                },
+            },
+            "required": ["type", "summary", "content"],
+        },
+    },
+    {
+        "name": "recall_memory",
+        "description": (
+            "Search long-term memory for stored information. Use when the user asks "
+            "about something they previously told you, or when you need stored facts, "
+            "contacts, or knowledge."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "What to search for in memory",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["user_profile", "fact", "event", "preference"],
+                    "description": "Optional: filter by memory type",
+                },
+            },
+            "required": ["query"],
+        },
+    },
 ]
