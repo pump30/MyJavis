@@ -19,24 +19,64 @@ TOOLS = [
         },
     },
     {
-        "name": "set_alarm",
+        "name": "schedule_task",
         "description": (
-            "Set an alarm or timer. Use when the user asks to be reminded at a "
-            "specific time or wants a countdown timer."
+            "Create a scheduled task: reminder, action, or recurring. "
+            "Use 'reminder' for simple notifications, 'action' for tasks "
+            "that need AI agent execution, 'recurring' for periodic tasks."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "seconds": {
-                    "type": "integer",
-                    "description": "Number of seconds from now until the alarm fires",
+                "type": {
+                    "type": "string",
+                    "enum": ["reminder", "action", "recurring"],
+                    "description": "Task type",
                 },
                 "label": {
                     "type": "string",
-                    "description": "A short label for the alarm, e.g. 'Take a break'",
+                    "description": "Task description",
+                },
+                "fire_at": {
+                    "type": "string",
+                    "description": "ISO8601 absolute time, e.g. 2026-03-30T15:00:00+08:00",
+                },
+                "delay_seconds": {
+                    "type": "integer",
+                    "description": "Relative delay in seconds (alternative to fire_at)",
+                },
+                "cron_expr": {
+                    "type": "string",
+                    "description": "Cron expression for recurring tasks, e.g. '0 9 * * *'",
+                },
+                "agent_prompt": {
+                    "type": "string",
+                    "description": "Prompt to send to agent when task fires (required for action/recurring type)",
                 },
             },
-            "required": ["seconds"],
+            "required": ["type", "label"],
+        },
+    },
+    {
+        "name": "list_tasks",
+        "description": "List all scheduled tasks (active, fired, and cancelled).",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    {
+        "name": "cancel_task",
+        "description": "Cancel a scheduled task by ID.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer",
+                    "description": "Task ID to cancel",
+                },
+            },
+            "required": ["task_id"],
         },
     },
     {
