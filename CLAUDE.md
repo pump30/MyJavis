@@ -54,6 +54,16 @@ Every PR that changes UI or user-facing behavior **must** include a smoke test:
 4. **Take screenshots** of each key step using `browser_take_screenshot` and attach them to the PR body as evidence.
 5. Never skip smoke tests — they catch integration bugs that unit tests miss.
 
+### Docker Deployment After Testing
+Smoke test 完成后，必须将应用部署到 Docker 容器中验证：
+1. 构建镜像：`docker build -t jarvis-assistant .`
+2. 启动容器：`docker compose up -d`（会同时启动 app 和 AI proxy）
+3. 用 Playwright 打开 `http://localhost:8088` 再次验证核心功能。
+4. **截图**容器内运行的结果，附到 PR body 中。
+5. 验证通过后停止容器：`docker compose down`
+
+如果项目中还没有 `Dockerfile` 或 `docker-compose.yml`，需要先创建。
+
 ## Priority Areas
 
 1.  Add test coverage, starting with `agent/client.py` and `pipeline/orchestrator.py`.
