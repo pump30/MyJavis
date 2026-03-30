@@ -9,8 +9,9 @@ const sendBtn = document.getElementById('sendBtn');
 const micBtn = document.getElementById('micBtn');
 const voiceToggleBtn = document.getElementById('voiceToggleBtn');
 const stopBtn = document.getElementById('stopBtn');
-const alarmsPanel = document.getElementById('alarmsPanel');
-const alarmsList = document.getElementById('alarmsList');
+const taskListEl = document.getElementById('taskList');
+const tasksEmptyState = document.getElementById('tasksEmptyState');
+const tasksBadge = document.getElementById('tasks-badge');
 
 const STATUS_LABELS = {
     idle: '待机中',
@@ -19,14 +20,47 @@ const STATUS_LABELS = {
     speaking: '回复中...',
 };
 
+const TASK_TYPE_LABELS = {
+    reminder: '提醒',
+    action: '操作',
+    recurring: '循环',
+};
+
 let ws = null;
+let currentTab = 'chat';
 let micActive = false;
-let micSending = false;  // controls whether audio frames are actually sent
+let micSending = false;
 let audioContext = null;
 let micStream = null;
 let scriptProcessor = null;
 let reconnectTimer = null;
 let voiceEnabled = true;
+
+// ---- Tab switching ----
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        if (tab) switchTab(tab);
+    });
+});
+
+function switchTab(name) {
+    currentTab = name;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+    document.getElementById('input-bar').style.display = name === 'chat' ? '' : 'none';
+    if (name === 'tasks') clearTasksBadge();
+}
+
+function showTasksBadge() {
+    tasksBadge.hidden = false;
+}
+
+function clearTasksBadge() {
+    tasksBadge.hidden = true;
+}
 
 // ---- Sound effects (Web Audio API) ----
 function playNotificationSound() {
@@ -49,7 +83,6 @@ function playAlarmSound() {
     try {
         const ctx = new AudioContext();
         const t = ctx.currentTime;
-        // 3 rounds of double-beep (like a classic alarm)
         const notes = [
             [t + 0.0, 1047], [t + 0.15, 1319],
             [t + 0.5, 1047], [t + 0.65, 1319],
@@ -117,8 +150,11 @@ function handleMessage(msg) {
         case 'wake_detected':
             playNotificationSound();
             break;
-        case 'alarm':
-            showAlarm(msg);
+        case 'scheduled_task_fire':
+            handleTaskFire(msg.task);
+            break;
+        case 'tasks_updated':
+            renderTaskList(msg.tasks);
             break;
         case 'audio':
             if (voiceEnabled) playAudioChunk(msg.data);
@@ -129,7 +165,6 @@ function handleMessage(msg) {
 function updateState(state) {
     statusDot.className = 'status-dot ' + state;
     statusText.textContent = STATUS_LABELS[state] || state;
-    // Show stop button when processing or speaking
     stopBtn.style.display = (state === 'processing' || state === 'speaking') ? 'flex' : 'none';
 }
 
@@ -138,6 +173,7 @@ stopBtn.addEventListener('click', () => {
     send({ type: 'command', action: 'stop' });
 });
 
+// ---- Chat messages ----
 function appendMessage(role, text) {
     const welcome = conversation.querySelector('.welcome-msg');
     if (welcome) welcome.remove();
@@ -151,6 +187,99 @@ function appendMessage(role, text) {
     }
     conversation.appendChild(div);
     conversation.scrollTop = conversation.scrollHeight;
+}
+
+function appendChatNotification(label) {
+    const welcome = conversation.querySelector('.welcome-msg');
+    if (welcome) welcome.remove();
+
+    const div = document.createElement('div');
+    div.className = 'msg notification';
+    div.innerHTML = `<span class="notification-icon">&#128276;</span> ${escapeHtml(label)}`;
+    conversation.appendChild(div);
+    conversation.scrollTop = conversation.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+// ---- Task fire handling ----
+function handleTaskFire(task) {
+    playAlarmSound();
+    appendChatNotification(task.label || 'Task fired');
+    if (currentTab !== 'chat') showTasksBadge();
+}
+
+// ---- Task list rendering ----
+function renderTaskList(tasks) {
+    // Remove all task rows (keep empty state element)
+    taskListEl.querySelectorAll('.task-row').forEach(el => el.remove());
+
+    if (!tasks || tasks.length === 0) {
+        tasksEmptyState.style.display = '';
+        return;
+    }
+
+    tasksEmptyState.style.display = 'none';
+
+    tasks.forEach(task => {
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        row.dataset.taskId = task.id;
+
+        const isActive = task.status === 'active';
+        const typeLabel = TASK_TYPE_LABELS[task.type] || task.type;
+
+        row.innerHTML = `
+            <label class="task-toggle">
+                <input type="checkbox" ${isActive ? 'checked' : ''}>
+                <span class="task-toggle-slider"></span>
+            </label>
+            <div class="task-info">
+                <span class="task-label ${!isActive ? 'task-inactive' : ''}">${escapeHtml(task.label)}</span>
+                <span class="task-meta">
+                    <span class="type-badge type-${task.type}">${typeLabel}</span>
+                    ${task.fire_at ? `<span class="task-time">${formatFireAt(task.fire_at)}</span>` : ''}
+                    ${task.cron_expr ? `<span class="task-time">${escapeHtml(task.cron_expr)}</span>` : ''}
+                </span>
+            </div>
+            <span class="task-status-label ${task.status}">${formatStatus(task.status)}</span>
+        `;
+
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener('change', () => {
+            toggleTask(task.id, task.status);
+        });
+
+        taskListEl.appendChild(row);
+    });
+}
+
+function toggleTask(taskId, currentStatus) {
+    const action = currentStatus === 'active' ? 'cancel' : 'reactivate';
+    send({ type: 'task_toggle', task_id: taskId, action });
+}
+
+function formatFireAt(isoStr) {
+    try {
+        const d = new Date(isoStr);
+        return d.toLocaleString('zh-CN', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } catch {
+        return isoStr;
+    }
+}
+
+function formatStatus(status) {
+    const labels = { active: '活跃', fired: '已触发', cancelled: '已取消' };
+    return labels[status] || status;
 }
 
 // ---- Text input ----
@@ -220,12 +349,10 @@ async function startMic() {
 }
 
 function stopMic() {
-    // 1. Stop sending audio frames immediately
     micSending = false;
     micActive = false;
     micBtn.classList.remove('active');
 
-    // 2. Tear down audio pipeline
     if (scriptProcessor) {
         scriptProcessor.disconnect();
         scriptProcessor = null;
@@ -239,7 +366,6 @@ function stopMic() {
         audioContext = null;
     }
 
-    // 3. Tell server to process after all audio frames have stopped
     send({ type: 'mic_stop' });
 }
 
@@ -261,17 +387,6 @@ async function playAudioChunk(b64Data) {
     } catch (err) {
         console.error('Audio playback error:', err);
     }
-}
-
-// ---- Alarm display ----
-function showAlarm(msg) {
-    playAlarmSound();
-    alarmsPanel.style.display = 'block';
-    const item = document.createElement('div');
-    item.className = 'alarm-item';
-    item.innerHTML = `<span>${msg.label || 'Alarm'}</span><span>${msg.time || ''}</span>`;
-    alarmsList.appendChild(item);
-    appendMessage('assistant', `Alarm: ${msg.label || 'Alarm'}`);
 }
 
 // ---- Init ----

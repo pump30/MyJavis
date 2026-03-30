@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # Shared state — set by main.py before starting
 state_manager: StateManager = None
 agent_handler = None  # async callable(text) -> str
-alarm_manager = None
+scheduler_manager = None  # SchedulerManager — set by main.py
 orchestrator = None  # set by main.py — Orchestrator instance
 connected_clients: list[WebSocket] = []
 
@@ -53,6 +53,13 @@ async def websocket_endpoint(ws: WebSocket):
         "type": "state_change",
         "state": state_manager.state.value if state_manager else "idle",
     }))
+
+    # Send current task list
+    if scheduler_manager:
+        await ws.send_text(json.dumps({
+            "type": "tasks_updated",
+            "tasks": scheduler_manager.list_tasks(),
+        }, ensure_ascii=False))
 
     # Subscribe to state changes
     state_queue = state_manager.subscribe() if state_manager else None
@@ -122,6 +129,19 @@ async def websocket_endpoint(ws: WebSocket):
                 if orchestrator:
                     voice_reply = msg.get("voice_reply", True)
                     await orchestrator.browser_mic_stop(voice_reply=voice_reply)
+
+            elif msg_type == "task_toggle":
+                task_id = msg.get("task_id")
+                action = msg.get("action")  # "cancel" | "reactivate"
+                if scheduler_manager:
+                    if action == "cancel":
+                        await scheduler_manager.cancel_task(task_id)
+                    elif action == "reactivate":
+                        result = await scheduler_manager.reactivate_task(task_id)
+                        if result:  # error message for expired one-time
+                            await ws.send_text(json.dumps({"type": "error", "text": result}))
+                    tasks = scheduler_manager.list_tasks()
+                    await broadcast({"type": "tasks_updated", "tasks": tasks})
 
             elif msg_type == "command":
                 action = msg.get("action")

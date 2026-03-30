@@ -20,7 +20,7 @@ python main.py
 # Web UI at http://localhost:8088
 ```
 
-There are no tests or linting configured in this project.
+Tests: `python -m pytest tests/ -v` (activate venv first: `source venv/Scripts/activate`).
 
 ## Architecture
 
@@ -45,6 +45,24 @@ This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Dev
 - Self-review changes with `requesting-code-review` before creating a PR.
 - Create PRs to `main` using `gh pr create`.
 - **Git Proxy**: Use `http://127.0.0.1:7892` for all `git push` and `gh` commands.
+
+### Smoke Testing & PR Screenshots
+Every PR that changes UI or user-facing behavior **must** include a smoke test:
+1. Start the app: `source venv/Scripts/activate && python main.py`
+2. Open `http://localhost:8088` in Playwright browser.
+3. Walk through the relevant test scenarios (tab switching, task creation, etc.).
+4. **Take screenshots** of each key step using `browser_take_screenshot` and attach them to the PR body as evidence.
+5. Never skip smoke tests — they catch integration bugs that unit tests miss.
+
+### Docker Deployment After Testing
+Smoke test 完成后，必须将应用部署到 Docker 容器中验证：
+1. 构建镜像：`docker build -t jarvis-assistant .`
+2. 启动容器：`docker compose up -d`（会同时启动 app 和 AI proxy）
+3. 用 Playwright 打开 `http://localhost:8088` 再次验证核心功能。
+4. **截图**容器内运行的结果，附到 PR body 中。
+5. 验证通过后停止容器：`docker compose down`
+
+如果项目中还没有 `Dockerfile` 或 `docker-compose.yml`，需要先创建。
 
 ## Priority Areas
 
