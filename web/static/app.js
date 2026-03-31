@@ -36,6 +36,12 @@ let scriptProcessor = null;
 let reconnectTimer = null;
 let voiceEnabled = true;
 
+// Always-listen mode: continuous audio streaming for server-side wake word detection
+let alwaysListening = false;
+let listenAudioCtx = null;
+let listenMicStream = null;
+let listenProcessor = null;
+
 // ---- Tab switching ----
 document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -111,6 +117,7 @@ function connect() {
     ws.onopen = () => {
         console.log('[ws] connected');
         if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        startAlwaysListen();
     };
 
     ws.onmessage = (e) => {
@@ -370,6 +377,37 @@ function stopMic() {
 }
 
 micBtn.addEventListener('click', toggleMic);
+
+// ---- Always-listen mode (server-side wake word) ----
+async function startAlwaysListen() {
+    if (alwaysListening) return;
+    try {
+        listenMicStream = await navigator.mediaDevices.getUserMedia({
+            audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true }
+        });
+        listenAudioCtx = new AudioContext({ sampleRate: 16000 });
+        await listenAudioCtx.resume();
+        const source = listenAudioCtx.createMediaStreamSource(listenMicStream);
+
+        listenProcessor = listenAudioCtx.createScriptProcessor(2048, 1, 1);
+        listenProcessor.onaudioprocess = (e) => {
+            const data = e.inputBuffer.getChannelData(0);
+            const int16 = new Int16Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                int16[i] = Math.max(-32768, Math.min(32767, Math.round(data[i] * 32767)));
+            }
+            const bytes = new Uint8Array(int16.buffer);
+            const b64 = btoa(String.fromCharCode(...bytes));
+            send({ type: 'audio_chunk', data: b64, sample_rate: 16000 });
+        };
+        source.connect(listenProcessor);
+        listenProcessor.connect(listenAudioCtx.destination);
+
+        alwaysListening = true;
+    } catch (err) {
+        console.error('Always-listen error:', err);
+    }
+}
 
 // ---- Audio playback (TTS from server) ----
 async function playAudioChunk(b64Data) {

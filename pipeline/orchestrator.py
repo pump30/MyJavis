@@ -59,9 +59,14 @@ class Orchestrator:
         """Start the audio capture and pipeline loops."""
         self._running = True
         self._loop = asyncio.get_event_loop()
+
+        # System mic is optional (may be unavailable in Docker)
         await self._mic.start(self._audio_queue)
+        if not self._mic.available:
+            print("[orchestrator] No system mic — wake word via browser audio only.")
 
         # Audio processing thread — handles wake word + VAD + STT
+        # Runs even without system mic to process browser audio
         self._audio_thread = threading.Thread(
             target=self._audio_thread_loop, daemon=True, name="audio-pipeline"
         )
@@ -128,7 +133,13 @@ class Orchestrator:
             if voice_reply:
                 await self.state.set_state(PipelineState.SPEAKING)
                 audio_bytes = await synthesize(response)
-                await play_audio_bytes(audio_bytes)
+                if audio_bytes:
+                    import base64
+                    await self.broadcast({
+                        "type": "audio",
+                        "data": base64.b64encode(audio_bytes).decode("ascii"),
+                    })
+                    await play_audio_bytes(audio_bytes)
         except Exception as e:
             print(f"[browser-mic] Error: {e}")
             await self.broadcast({"type": "error", "text": str(e)})
@@ -294,6 +305,13 @@ class Orchestrator:
                 await self.state.set_state(PipelineState.SPEAKING)
                 audio_bytes = await synthesize(response)
                 if audio_bytes:
+                    # Broadcast audio to browsers for playback
+                    import base64
+                    await self.broadcast({
+                        "type": "audio",
+                        "data": base64.b64encode(audio_bytes).decode("ascii"),
+                    })
+                    # Also play locally if sounddevice is available
                     await play_audio_bytes(audio_bytes)
             except asyncio.CancelledError:
                 print("[orchestrator] Agent/TTS interrupted by wake word.")

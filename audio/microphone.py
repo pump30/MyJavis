@@ -1,8 +1,11 @@
-"""System microphone capture via sounddevice."""
+"""System microphone capture via sounddevice.
+
+sounddevice is optional — when unavailable (e.g. Docker without audio
+devices), the capture simply does nothing and ``available`` stays False.
+"""
 
 import asyncio
 import numpy as np
-import sounddevice as sd
 
 import config
 
@@ -13,23 +16,36 @@ class MicrophoneCapture:
 
     def __init__(self):
         self._queue: asyncio.Queue = None
-        self._stream: sd.InputStream = None
+        self._stream = None
         self._loop: asyncio.AbstractEventLoop = None
         self._running = False
+        self.available = False
 
     async def start(self, queue: asyncio.Queue):
         self._queue = queue
         self._loop = asyncio.get_event_loop()
         self._running = True
 
-        self._stream = sd.InputStream(
-            samplerate=config.SAMPLE_RATE,
-            channels=config.CHANNELS,
-            dtype="int16",
-            blocksize=config.CHUNK_SIZE,
-            callback=self._audio_callback,
-        )
-        self._stream.start()
+        try:
+            import sounddevice as sd
+        except (ImportError, OSError) as e:
+            print(f"[mic] sounddevice not available: {e}")
+            print("[mic] System microphone disabled — use browser mic instead.")
+            return
+
+        try:
+            self._stream = sd.InputStream(
+                samplerate=config.SAMPLE_RATE,
+                channels=config.CHANNELS,
+                dtype="int16",
+                blocksize=config.CHUNK_SIZE,
+                callback=self._audio_callback,
+            )
+            self._stream.start()
+            self.available = True
+        except Exception as e:
+            print(f"[mic] Failed to open audio device: {e}")
+            print("[mic] System microphone disabled — use browser mic instead.")
 
     def _safe_put(self, chunk):
         """Put chunk into queue, silently dropping if full."""

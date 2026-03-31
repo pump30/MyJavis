@@ -92,6 +92,11 @@ async def websocket_endpoint(ws: WebSocket):
                     await state_manager.set_state(PipelineState.SPEAKING)
                 audio_bytes = await synthesize(response)
                 if audio_bytes:
+                    import base64
+                    await broadcast({
+                        "type": "audio",
+                        "data": base64.b64encode(audio_bytes).decode("ascii"),
+                    })
                     await play_audio_bytes(audio_bytes)
         except asyncio.CancelledError:
             pass

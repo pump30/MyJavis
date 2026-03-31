@@ -1,23 +1,39 @@
-"""Audio playback via sounddevice."""
+"""Audio playback via sounddevice (optional).
+
+When sounddevice is not available (e.g. Docker), playback is a no-op.
+The caller is responsible for sending audio to the browser via broadcast.
+"""
 
 import io
 import asyncio
 import threading
-import numpy as np
-import sounddevice as sd
 
 # Global interrupt flag — set to stop current playback
 _interrupt = threading.Event()
+
+# Whether local audio playback is available
+_has_sounddevice = False
+try:
+    import sounddevice as sd
+    _has_sounddevice = True
+except (ImportError, OSError):
+    sd = None
 
 
 def interrupt_playback():
     """Signal the current playback to stop immediately."""
     _interrupt.set()
-    sd.stop()
+    if _has_sounddevice:
+        sd.stop()
 
 
 async def play_audio_bytes(audio_bytes: bytes, sample_rate: int = 24000):
-    """Play raw audio bytes (MP3) using sounddevice. Can be interrupted."""
+    """Play raw audio bytes (MP3) using sounddevice. Can be interrupted.
+
+    Returns silently if sounddevice is not available.
+    """
+    if not _has_sounddevice:
+        return
     _interrupt.clear()
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _play_sync, audio_bytes, sample_rate)
@@ -25,6 +41,7 @@ async def play_audio_bytes(audio_bytes: bytes, sample_rate: int = 24000):
 
 def _play_sync(audio_bytes: bytes, sample_rate: int):
     """Synchronous audio playback. Tries to decode MP3 via mini decoder."""
+    import numpy as np
     try:
         from pydub import AudioSegment
         seg = AudioSegment.from_mp3(io.BytesIO(audio_bytes))
