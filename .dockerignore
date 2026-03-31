@@ -1,8 +1,10 @@
 venv/
 __pycache__/
+*.pyc
 .git/
 .claude/
 .cline/
+.vscode/
 data/
-*.pyc
+docs/
 .gitignore
