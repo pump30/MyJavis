@@ -41,10 +41,23 @@ All settings are module-level constants in `config.py`. Key settings include `AN
 
 ### Development & PRs
 This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Develop (TDD) → Review**.
-- Use `git worktree` for feature isolation.
-- Self-review changes with `requesting-code-review` before creating a PR.
-- Create PRs to `main` using `gh pr create`.
+
+每次功能开发必须遵循以下完整流程：
+
+1. **Worktree 隔离开发**：用 `git worktree` 创建独立工作目录进行开发。
+2. **自审代码**：开发完成后用 `requesting-code-review` 自审。
+3. **创建 PR**：用 `gh pr create` 向 `main` 提交 PR。
+4. **Docker 部署测试**：确保 proxy 已启动（`docker compose -f docker-compose.proxy.yml up -d`），然后构建并启动应用。多分支并行时用 `PORT` 环境变量避免端口冲突：
+   ```bash
+   # 构建（需要代理参数）
+   docker compose build --build-arg http_proxy=http://host.docker.internal:7890 --build-arg https_proxy=http://host.docker.internal:7890
+   # 启动（默认 8088，可自定义端口）
+   PORT=8089 docker compose up -d
+   ```
+5. **截图贴到 PR**：测试通过后，截图测试结果并用 `gh pr comment` 附到 PR 上作为验证证据。
+
 - **Git Proxy**: Use `http://127.0.0.1:7892` for all `git push` and `gh` commands.
+- **Docker Build Proxy**: Use `--build-arg http_proxy=http://host.docker.internal:7890` for `docker compose build`.
 - **Resolve conflicts before merging**: After creating a PR, always `git fetch origin main && git rebase origin/main` to resolve any conflicts, then force-push the branch. PRs must be conflict-free before requesting merge.
 
 ### Smoke Testing & PR Screenshots
@@ -57,13 +70,11 @@ Every PR that changes UI or user-facing behavior **must** include a smoke test:
 
 ### Docker Deployment After Testing
 Smoke test 完成后，必须将应用部署到 Docker 容器中验证：
-1. 构建镜像：`docker build -t jarvis-assistant .`
-2. 启动容器：`docker compose up -d`（会同时启动 app 和 AI proxy）
+1. 构建镜像：`docker compose build`（需要代理参数，见上方 Docker Build Proxy）
+2. 启动容器：`docker compose up -d`（会同时启动 app 和 AI proxy）。多分支并行时用 `PORT` 避免冲突：`PORT=8089 docker compose up -d`
 3. 用 Playwright 打开 `http://localhost:8088` 再次验证核心功能。
 4. **截图**容器内运行的结果，附到 PR body 中。
 5. 验证通过后停止容器：`docker compose down`
-
-如果项目中还没有 `Dockerfile` 或 `docker-compose.yml`，需要先创建。
 
 ## Priority Areas
 

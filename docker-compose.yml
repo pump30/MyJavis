@@ -19,7 +19,7 @@ services:
   jarvis:
     build: .
     ports:
-      - "8088:8088"
+      - "${PORT:-8088}:8088"
     environment:
       - ANTHROPIC_BASE_URL=http://aicore-proxy:6655
     volumes:
