@@ -46,7 +46,7 @@ This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Dev
 
 1. **Worktree 隔离开发**：用 `git worktree` 创建独立工作目录进行开发。
 2. **自审代码**：开发完成后用 `requesting-code-review` 自审。
-3. **创建 PR**：用 `gh pr create` 向 `main` 提交 PR。
+3. **创建 PR**：用 `gh pr create` 向 `main` 提交 PR。如有冲突，先 rebase 或 merge 解决冲突后再继续。
 4. **Docker 部署测试**：确保 proxy 已启动（`docker compose -f docker-compose.proxy.yml up -d`），然后构建并启动应用。多分支并行时用 `PORT` 环境变量避免端口冲突：
    ```bash
    # 构建（需要代理参数）
