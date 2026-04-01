@@ -47,13 +47,14 @@ This project uses the Superpowers plugin workflow: **Brainstorm → Plan → Dev
 1. **Worktree 隔离开发**：用 `git worktree` 创建独立工作目录进行开发。
 2. **自审代码**：开发完成后用 `requesting-code-review` 自审。
 3. **创建 PR**：用 `gh pr create` 向 `main` 提交 PR。如有冲突，先 rebase 或 merge 解决冲突后再继续。
-4. **Docker 部署测试**：确保 proxy 已启动（`docker compose -f docker-compose.proxy.yml up -d`），然后构建并启动应用。多分支并行时用 `PORT` 环境变量避免端口冲突：
+4. **Docker 部署测试**：确保 proxy 已启动（`docker compose -f docker-compose.proxy.yml up -d`），然后构建并启动应用。**必须使用非默认端口**，避免与主分支或其他分支的容器冲突：
    ```bash
    # 构建（需要代理参数）
-   docker compose build --build-arg http_proxy=http://host.docker.internal:7890 --build-arg https_proxy=http://host.docker.internal:7890
-   # 启动（默认 8088，可自定义端口）
-   PORT=8089 docker compose up -d
+   docker compose build --build-arg http_proxy=http://host.docker.internal:7892 --build-arg https_proxy=http://host.docker.internal:7892
+   # 启动 — 每个分支必须用不同端口（不要用 8088，那是主分支的）
+   PORT=8090 docker compose up -d
    ```
+   > **重要**：每次开分支测试时，先用 `docker ps` 或 `curl` 检查目标端口是否已被占用，选择一个空闲端口。
 5. **截图贴到 PR**：测试通过后，截图测试结果并用 `gh pr comment` 附到 PR 上作为验证证据。
 
 - **Git Proxy**: Use `http://127.0.0.1:7892` for all `git push` and `gh` commands.
@@ -71,8 +72,8 @@ Every PR that changes UI or user-facing behavior **must** include a smoke test:
 ### Docker Deployment After Testing
 Smoke test 完成后，必须将应用部署到 Docker 容器中验证：
 1. 构建镜像：`docker compose build`（需要代理参数，见上方 Docker Build Proxy）
-2. 启动容器：`docker compose up -d`（会同时启动 app 和 AI proxy）。多分支并行时用 `PORT` 避免冲突：`PORT=8089 docker compose up -d`
-3. 用 Playwright 打开 `http://localhost:8088` 再次验证核心功能。
+2. 启动容器：**必须用不同端口**，先检查端口占用再启动：`PORT=<空闲端口> docker compose up -d`
+3. 用 Playwright 打开对应端口的 URL（如 `http://localhost:8090`）再次验证核心功能。
 4. **截图**容器内运行的结果，附到 PR body 中。
 5. 验证通过后停止容器：`docker compose down`
 
