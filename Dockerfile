@@ -4,10 +4,10 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# Install Python deps — skip audio/ML packages that won't work in container
-# (sounddevice, openwakeword, faster-whisper, pyttsx3, edge-tts, yt-dlp)
-# The app gracefully falls back to text-only mode without them.
-RUN grep -v -E '^#|^$|sounddevice|openwakeword|faster-whisper|pyttsx3|edge-tts|yt-dlp' requirements.txt > /tmp/reqs.txt \
+# Install Python deps — skip audio/ML packages that need system audio libs
+# (sounddevice, openwakeword, faster-whisper, pyttsx3)
+# edge-tts and yt-dlp are pure Python and work fine in containers.
+RUN grep -v -E '^#|^$|sounddevice|openwakeword|faster-whisper|pyttsx3' requirements.txt > /tmp/reqs.txt \
     && pip install --no-cache-dir -r /tmp/reqs.txt
 
 COPY . .
