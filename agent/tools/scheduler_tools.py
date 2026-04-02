@@ -15,7 +15,7 @@ async def schedule_task(scheduler, input_data: dict) -> str:
     cron_expr = input_data.get("cron_expr")
     agent_prompt = input_data.get("agent_prompt")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone(timedelta(hours=8)))
 
     # Resolve fire_at
     if fire_at_str:

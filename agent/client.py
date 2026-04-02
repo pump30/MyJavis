@@ -1,6 +1,6 @@
 """Anthropic SDK client with agentic tool-use loop."""
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import anthropic
 
 import config
@@ -59,7 +59,7 @@ async def chat(user_text: str) -> str:
                 max_tokens=config.MAX_TOKENS,
                 system=(
                     f"{config.SYSTEM_PROMPT}\n"
-                    f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S %A')}"
+                    f"Current date and time: {datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S %A (Asia/Shanghai UTC+8)')}"
                     f"{_memory_loader.build_context()}"
                 ),
                 tools=TOOLS,
